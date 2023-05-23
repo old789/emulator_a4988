@@ -1,3 +1,5 @@
+// #define USE_SERIAL
+
 #define INPUT_STEP 2
 #define INPUT_DIRECTION 3
 #define STEPPERa1 4
@@ -22,6 +24,10 @@ void setup() {
   pinMode( INPUT_DIRECTION, INPUT );
   pinMode( LED, OUTPUT );
   motor.setSpeed( RPM );
+#ifdef USE_SERIAL
+  Serial.begin(9600);
+  Serial.println("Booted");
+#endif
 }
 
 void loop() {
