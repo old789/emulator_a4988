@@ -6,19 +6,48 @@
 #define STEPPERb2 7
 #define LED 8
 
-#include <AccelStepper.h>
+#define STEPS 100 //  360 / 3.6
+#define RPM 30
 
-AccelStepper motor1(4, STEPPERa1, STEPPERa2, STEPPERb1, STEPPERb2);
+#define   NOP __asm__ __volatile__ ("nop\n\t")
+ 
+#include <Stepper.h>
 
-void setup()
-{
+uint8_t state = LOW;
+
+Stepper motor(STEPS, STEPPERa1, STEPPERa2, STEPPERb1, STEPPERb2);
+
+void setup() {
   pinMode( INPUT_STEP, INPUT );
   pinMode( INPUT_DIRECTION, INPUT );
-  pinMode(LED, OUTPUT);
+  pinMode( LED, OUTPUT );
+  motor.setSpeed( RPM );
 }
 
-void loop()
-{
-  digitalWrite(LED, digitalRead(LED) ^ HIGH);
-  delay(2000);
+void loop() {
+  uint8_t d = 1;
+  if ( digitalRead( INPUT_STEP ) == LOW ){
+    if ( state == HIGH ) {
+      state = LOW;
+      digitalWrite( LED, LOW );
+    }
+    nop5();
+    return;
+  }
+  if ( state == HIGH ) {
+    return;
+  }
+  digitalWrite( LED, HIGH );
+  state = HIGH;
+  d = digitalRead( INPUT_DIRECTION ) == LOW ? -1 : 1;
+  motor.step(d);
+}
+
+void nop5() {
+  NOP;
+  NOP;
+  NOP;
+  NOP;
+  NOP;
+  NOP;  
 }
