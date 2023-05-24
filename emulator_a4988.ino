@@ -8,7 +8,8 @@
 #define STEPPERb1 6
 #define STEPPERb2 7
 #define LED 8
-#define LED_BUILTIN 14
+// Hack for Arduino pro micro
+#define LED_BUILTIN 17
 
 // motor
 #define STEPS 100 //  360 / 3.6
@@ -21,6 +22,7 @@
 #include <Stepper.h>
 
 uint8_t state = LOW;
+unsigned long prev_timestamp = 0;
 uint16_t tick = 0;
 
 Stepper motor(STEPS, STEPPERa1, STEPPERa2, STEPPERb1, STEPPERb2);
@@ -40,6 +42,7 @@ void setup() {
 
 void loop() {
   int8_t d = 1;
+  blink();
    if ( digitalRead( INPUT_STEP ) == LOW ){
     if ( state == HIGH ) {
       state = LOW;
@@ -68,4 +71,22 @@ void nop5() {
   NOP;
   NOP;
   NOP;  
+}
+
+void blink() {
+unsigned long timestamp = millis();
+
+  if ( timestamp < prev_timestamp ) {
+    tick += (uint16_t)( 0xffffffff - prev_timestamp + timestamp );
+  }else{
+    tick += (uint16_t)( timestamp - prev_timestamp );
+  }
+  prev_timestamp = timestamp;
+  if ( tick > 1000 ) {
+#ifdef USE_SERIAL
+  Serial.println("Tick");
+#endif
+    tick = 0;
+    digitalWrite( LED_BUILTIN, digitalRead( LED_BUILTIN ) ^ HIGH );
+  }
 }
