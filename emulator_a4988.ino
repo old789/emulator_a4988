@@ -1,4 +1,5 @@
-#define USE_SERIAL
+//#define USE_SERIAL
+#define WATCHDOG
 
 // pins 
 #define INPUT_STEP 2
@@ -19,13 +20,17 @@
 
 #define   NOP __asm__ __volatile__ ("nop\n\t")
 
-#include <avr/wdt.h>
+#ifdef WATCHDOG
+# include <avr/wdt.h>
+#endif
 #include <Stepper.h>
 
 uint8_t state = LOW;
 unsigned long prev_timestamp = 0;
 uint16_t tick_led = 0;
+#ifdef WATCHDOG
 uint16_t tick_wdt = 0;
+#endif
 
 Stepper motor(STEPS, STEPPERa1, STEPPERa2, STEPPERb1, STEPPERb2);
 
@@ -34,6 +39,8 @@ Stepper motor(STEPS, STEPPERa1, STEPPERa2, STEPPERb1, STEPPERb2);
  * що цікаво, після скидання сигналом RESET або у випадку чіпів P, такого ефекту нема.
  * Взагалі-то досить код із цієї функції помістити в функцію setup, але мануал на чіп радить так.
  */
+
+#ifdef WATCHDOG
  
 void clr_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));
 
@@ -41,6 +48,8 @@ void clr_mcusr(void){
   MCUSR = 0;
   wdt_disable();
 }
+
+#endif
 
 void setup() {
   pinMode( INPUT_STEP, INPUT );
@@ -53,7 +62,10 @@ void setup() {
   delay(2000);
   Serial.println("Booted");
 # endif
-  wdt_enable (WDTO_250MS);
+# ifdef WATCHDOG
+  //wdt_enable (WDTO_250MS);
+  wdt_enable (WDTO_2S);
+# endif
 }
 
 void loop() {
@@ -99,14 +111,16 @@ uint16_t delta = 0;
     delta = (uint16_t)( timestamp - prev_timestamp );
   }
   prev_timestamp = timestamp;
-  tick_led += delta;
-  tick_wdt += delta;
   
-  if ( tick_wdt > 75 ) { 
+# ifdef WATCHDOG
+  tick_wdt += delta;
+   if ( tick_wdt > 75 ) { 
     wdt_reset();
     tick_wdt = 0;
   }
-  
+# endif
+
+  tick_led += delta;
   if ( tick_led > 1000 ) {
 #   ifdef USE_SERIAL
     Serial.println("Tick");
